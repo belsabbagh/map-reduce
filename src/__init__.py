@@ -1,3 +1,6 @@
+from src.util import group_by_key
+
+
 class Mapper:
     def __init__(self, map_fn) -> None:
         self.map_fn = map_fn
@@ -27,16 +30,22 @@ class Grouper(Shuffler):
         super().__init__(group_fn)
 
 
+class KeyGrouper(Grouper):
+    def __init__(self) -> None:
+        super().__init__(group_by_key)
+
+
 class MapReduceBuilder:
-    def __init__(self, map_fn, group_fn, reduce_fn) -> None:
-        self.map_fn = map_fn
-        self.reduce_fn = reduce_fn
-        self.group_fn = group_fn
+    def __init__(self, mapper, grouper, reducer) -> None:
+        self.mapper = mapper
+        self.grouper = grouper
+        self.reducer = reducer
 
     def __call__(self, data, *args, **kwargs):
-        maps = [Mapper(self.map_fn)(i, *args, **kwargs) for i in data]
-        new_maps = Grouper(self.group_fn)(maps, *args, **kwargs)
-        return [Reducer(self.reduce_fn)(i, *args, **kwargs) for i in new_maps]
+        mapped = [self.mapper(d, *args, **kwargs) for d in data]
+        grouped = self.grouper(mapped, *args, **kwargs)
+        reduced = [self.reducer(g, *args, **kwargs) for g in grouped]
+        return reduced
 
 
 class MapWithDuplicateKeys:

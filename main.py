@@ -1,26 +1,11 @@
-from src import MapReduceBuilder, MapWithDuplicateKeys
+from src import MapReduceBuilder, MapWithDuplicateKeys, KeyGrouper, Reducer, Mapper
 
 
 def map_fn(text):
     _map = MapWithDuplicateKeys()
-    for word in text.split():
+    for word in text.strip().replace("\n", "").lower().split():
         _map(**{word: 1})
     return _map._map
-
-
-def group_fn(maps):
-    merged_map = []
-    for m in maps:
-        merged_map.extend(m)
-    keys = set([i[0] for i in merged_map])
-    grouped_map = []
-    for key in keys:
-        shard = []
-        for i in merged_map:
-            if i[0] == key:
-                shard.append(i)
-        grouped_map.append(shard)
-    return grouped_map
 
 
 def reduce_fn(m: list[tuple]):
@@ -28,7 +13,9 @@ def reduce_fn(m: list[tuple]):
 
 
 if __name__ == "__main__":
-    text = "hello world\nhey you\nhello world"
-    shards = text.split("\n")
-    mpr = MapReduceBuilder(map_fn, group_fn, reduce_fn)
-    print(mpr(shards))
+    with open("test_data.txt", "r") as f:
+        shards = f.readlines()
+    mpr = MapReduceBuilder(Mapper(map_fn), KeyGrouper(), Reducer(reduce_fn))
+    res = mpr(shards)
+    sorted_res = sorted(res, key=lambda x: x[1], reverse=True)
+    print(sorted_res)
