@@ -27,13 +27,16 @@ class Grouper(Shuffler):
         super().__init__(group_fn)
 
 
-class MapReduce:
-    def __init__(self, mapper, reducer) -> None:
-        self.mapper = mapper
-        self.reducer = reducer
+class MapReduceBuilder:
+    def __init__(self, map_fn, group_fn, reduce_fn) -> None:
+        self.map_fn = map_fn
+        self.reduce_fn = reduce_fn
+        self.group_fn = group_fn
 
-    def __call__(self, *args, **kwargs):
-        return self.reducer(self.mapper(*args, **kwargs))
+    def __call__(self, data, *args, **kwargs):
+        maps = [Mapper(self.map_fn)(i, *args, **kwargs) for i in data]
+        new_maps = Grouper(self.group_fn)(maps, *args, **kwargs)
+        return [Reducer(self.reduce_fn)(i, *args, **kwargs) for i in new_maps]
 
 
 class MapWithDuplicateKeys:

@@ -1,6 +1,4 @@
-from src import Mapper, Reducer, Grouper, MapWithDuplicateKeys
-
-# word count example
+from src import MapReduceBuilder, MapWithDuplicateKeys
 
 
 def map_fn(text):
@@ -32,9 +30,5 @@ def reduce_fn(m: list[tuple]):
 if __name__ == "__main__":
     text = "hello world\nhey you\nhello world"
     shards = text.split("\n")
-    maps = [Mapper(map_fn)(i) for i in shards]
-    print(maps)
-    new_maps = Grouper(group_fn)(maps)
-    print(new_maps)
-    reductions = [Reducer(reduce_fn)(i) for i in new_maps]
-    print(reductions)
+    mpr = MapReduceBuilder(map_fn, group_fn, reduce_fn)
+    print(mpr(shards))
